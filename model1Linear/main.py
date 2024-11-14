@@ -70,16 +70,20 @@ def training(epoch):
 
 def testing():
     model.eval()
-    
+
     testLoss, correct = 0
-    
+
     with torch.no_grad():
-        for data, target in dataLoaders['train']:
+        for data, target in dataLoaders['test']:
             data, target = data.to(device), target.to(device)
             output = model(data)
             testLoss += criterion(output, target).item()
             pred = output.argmax(dim = 1, keepdim = True)
             correct += pred.eq(target.view_as(pred)).sum().item()
+
+    testLoss /= len(dataLoaders['test'].dataset)
+    print(f"\nTest set: Average loss: {testLoss:.4f}, Accuracy {correct}/{len(dataLoaders['test'].dataset)} ({100. * correct / len(dataLoaders['test'].dataset):.0f}%)\n")
+    torch.save(model, "trainedModel")
 
 if __name__ == '__main__':
     for epoch in range(1,11):
