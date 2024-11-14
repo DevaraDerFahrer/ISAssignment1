@@ -14,27 +14,14 @@ mnistTestData = datasets.MNIST(
     download=True
 )
 
-class model1Linear(tNN.Module):
-    def __init__(self):
-        super().__init__()
-        self.fc1 = tNN.Linear(784,36)
-        self.fc2 = tNN.Linear(36,36)
-        self.out = tNN.Linear(36,10)
-    def forward(self, x):
-        x = x.view(-1, 784)
-        x = tNN.functional.relu(self.fc1(x))
-        x = tNN.functional.relu(self.fc2(x))
-        x = self.out(x)
-        return tNN.functional.softmax(x)
-
-
-model = torch.load("trainedModel.pt")
+model = torch.jit.load("model1LinearScripted.pt")
 model.eval()
 
-data, target = mnistTestData[305]
+data, target = mnistTestData[238]
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+model.to(device)
 data = data.unsqueeze(0).to(device)
 
 output = model(data)
@@ -48,9 +35,9 @@ image = data.squeeze(0).squeeze(0).cpu().numpy()
 plt.imshow(image, cmap="gray")
 plt.show()
 
-pic = PIL.Image.open("../manualtestdata/9D0.png").convert("L")
+pic = PIL.Image.open("../data/manualtestdata/2D0.png").convert("L")
 transformF = torchvision.transforms.Compose([torchvision.transforms.ToTensor()])
-picTensor = transformF(pic)
+picTensor = transformF(pic).to(device)
 
 transformF = torchvision.transforms.Compose([torchvision.transforms.Resize((28, 28)),torchvision.transforms.PILToTensor()])
 

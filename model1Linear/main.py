@@ -16,11 +16,24 @@ mnistTrainData = datasets.MNIST(
     download=True
 )
 
+mnistTestingData = datasets.MNIST(
+    root="../data",
+    train= False,
+    transform=ToTensor(),
+    download=True
+)
+
 dataLoaders = {
     'train': DataLoader(
         mnistTrainData,
         batch_size=100,
-        shuffle=False,
+        shuffle=True,
+        num_workers=1
+    ),
+    'test': DataLoader(
+        mnistTestingData,
+        batch_size=100,
+        shuffle=True,
         num_workers=1
     )
 }
@@ -55,8 +68,22 @@ def training(epoch):
         if batchIDx % 20 == 0:
             print(f"Train epoch: {epoch} [{batchIDx * len(data)}/{len(dataLoaders['train'].dataset)} ({100. * batchIDx / len(dataLoaders['train']):.0f}%)]\t{loss.item():.6f}")
 
+def testing():
+    model.eval()
+    
+    testLoss, correct = 0
+    
+    with torch.no_grad():
+        for data, target in dataLoaders['train']:
+            data, target = data.to(device), target.to(device)
+            output = model(data)
+            testLoss += criterion(output, target).item()
+            pred = output.argmax(dim = 1, keepdim = True)
+            correct += pred.eq(target.view_as(pred)).sum().item()
+
 if __name__ == '__main__':
     for epoch in range(1,11):
         training(epoch)
-    torch.save(model, "trainedModel.pt")
+    modelScripted = torch.jit.script(model)
+    modelScripted.save('model1LinearScripted.pt')
     print("model saved")
