@@ -8,6 +8,9 @@ import numpy as np
 from torch.utils.data import DataLoader
 import torch.nn as tNN
 import torch.optim as tOptim
+import time
+
+programStartTime = time.time()
 
 mnistTrainData = datasets.MNIST(
     root="../data",
@@ -68,6 +71,7 @@ def training(epoch):
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()
+        
         if batchIDx % 20 == 0:
             print(f"Train epoch: {epoch} [{batchIDx * len(data)}/{len(dataLoaders['train'].dataset)} ({100. * batchIDx / len(dataLoaders['train']):.0f}%)]\t{loss.item():.6f}")
 
@@ -87,9 +91,9 @@ def testing():
     print(f"\nTest set: Average loss: {testLoss:.4f}, Accuracy {correct}/{len(dataLoaders['test'].dataset)} ({100. * correct / len(dataLoaders['test'].dataset):.0f}%)\n")
 
 if __name__ == '__main__':
-    for epoch in range(1,11):
+    for epoch in range(10):
         training(epoch)
         testing()
     modelScripted = torch.jit.script(model)
     modelScripted.save('model1_Linear_Scripted.pt')
-    print("model saved")
+    print(f"model saved, elapsed time: {time.time() - programStartTime}")
