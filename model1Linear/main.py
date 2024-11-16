@@ -8,6 +8,9 @@ import numpy as np
 from torch.utils.data import DataLoader
 import torch.nn as tNN
 import torch.optim as tOptim
+import time
+
+programStartTime = time.time()
 
 mnistTrainData = datasets.MNIST(
     root="../data",
@@ -51,7 +54,8 @@ class model1Linear(tNN.Module):
         x = self.out(x)
         return tNN.functional.softmax(x)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+#device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+device = torch.device('cuda')
 model = model1Linear().to(device)
 criterion = tNN.CrossEntropyLoss()
 optimizer = tOptim.Adam(model.parameters(),lr=0.001)
@@ -65,13 +69,14 @@ def training(epoch):
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()
+        
         if batchIDx % 20 == 0:
             print(f"Train epoch: {epoch} [{batchIDx * len(data)}/{len(dataLoaders['train'].dataset)} ({100. * batchIDx / len(dataLoaders['train']):.0f}%)]\t{loss.item():.6f}")
 
 def testing():
     model.eval()
-
-    testLoss, correct = 0
+    testLoss = 0
+    correct = 0
 
     with torch.no_grad():
         for data, target in dataLoaders['test']:
@@ -86,8 +91,9 @@ def testing():
     torch.save(model, "trainedModel")
 
 if __name__ == '__main__':
-    for epoch in range(1,11):
+    for epoch in range(10):
         training(epoch)
+        testing()
     modelScripted = torch.jit.script(model)
     modelScripted.save('model1LinearScripted.pt')
-    print("model saved")
+    print(f"model saved, elapsed time: {time.time() - programStartTime}")
