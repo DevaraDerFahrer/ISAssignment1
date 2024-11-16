@@ -14,7 +14,7 @@ mnistTestData = datasets.MNIST(
     download=True
 )
 
-model = torch.jit.load("model1LinearScripted.pt")
+model = torch.jit.load("model2_CNN1_Scripted.pt")
 model.eval()
 
 data, target = mnistTestData[238]

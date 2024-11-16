@@ -38,22 +38,40 @@ dataLoaders = {
     )
 }
 
-class model1Linear(tNN.Module):
+inputSize = 28
+inputChannel = 1
+numClassess = 10
+
+class cnnModel1(tNN.Module):
     def __init__(self):
-        super().__init__()
-        self.fc1 = tNN.Linear(784,36)
-        self.fc2 = tNN.Linear(36,36)
-        self.out = tNN.Linear(36,10)
+        super(cnnModel1, self).__init__()
+        self.conv1 = tNN.Conv2d(inputChannel, 10, kernel_size=5)
+        self.outputChannel = 20
+        self.conv2 = tNN.Conv2d(10, self.outputChannel, kernel_size=5)
+        self.conv2Drop = tNN.Dropout2d()
+        self.inputSize = ((inputSize - 5 + 2*0)/1) + 1 # 1st convolution
+        self.inputSize = ((self.inputSize - 2 + 2*0)/2) + 1 # maxpool 2x2 stride 2
+        self.inputSize = ((self.inputSize - 5 + 2*0)/1) + 1 # 2nd convolution
+        self.inputSize = ((self.inputSize - 2 + 2*0)/2) + 1 # maxpool 2x2 stride 2
+        self.inputSize = int(self.inputSize * self.inputSize * self.outputChannel)
+        self.fc1 = tNN.Linear(self.inputSize,50)
+        self.fc2 = tNN.Linear(50,numClassess)
+   
     def forward(self, x):
-        x = x.view(-1, 784)
+        x = self.conv1(x)
+        x = tNN.functional.relu(tNN.functional.max_pool2d(x, 2))
+        x = self.conv2(x)
+        x = self.conv2Drop(x)
+        x = tNN.functional.relu(tNN.functional.max_pool2d(x, 2))
+        x = x.view(-1, self.inputSize)
         x = tNN.functional.relu(self.fc1(x))
-        x = tNN.functional.relu(self.fc2(x))
-        x = self.out(x)
+        x = tNN.functional.dropout(x, training=self.training)
+        x = self.fc2(x)
         return tNN.functional.softmax(x)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = model1Linear().to(device)
-criterion = tNN.CrossEntropyLoss()
+model = cnnModel1().to(device)
+criterion = tNN.CrossEntropyLoss().to(device)
 optimizer = tOptim.Adam(model.parameters(),lr=0.001)
 
 def training(epoch):
@@ -70,9 +88,8 @@ def training(epoch):
 
 def testing():
     model.eval()
-
-    testLoss, correct = 0
-
+    testLoss = 0
+    correct = 0
     with torch.no_grad():
         for data, target in dataLoaders['test']:
             data, target = data.to(device), target.to(device)
@@ -83,11 +100,11 @@ def testing():
 
     testLoss /= len(dataLoaders['test'].dataset)
     print(f"\nTest set: Average loss: {testLoss:.4f}, Accuracy {correct}/{len(dataLoaders['test'].dataset)} ({100. * correct / len(dataLoaders['test'].dataset):.0f}%)\n")
-    torch.save(model, "trainedModel")
 
 if __name__ == '__main__':
     for epoch in range(1,11):
         training(epoch)
+        testing()
     modelScripted = torch.jit.script(model)
-    modelScripted.save('model1LinearScripted.pt')
+    modelScripted.save('model2_CNN1_Scripted.pt')
     print("model saved")
