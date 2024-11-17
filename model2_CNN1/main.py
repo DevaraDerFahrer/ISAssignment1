@@ -38,12 +38,8 @@ dataLoaders = {
     )
 }
 
-inputSize = 28
-inputChannel = 1
-numClassess = 10
-
 class cnnModel1(tNN.Module):
-    def __init__(self):
+    def __init__(self, inputChannel, inputSize, numClassess):
         super(cnnModel1, self).__init__()
         self.conv1 = tNN.Conv2d(inputChannel, 10, kernel_size=5)
         self.outputChannel = 20
@@ -69,12 +65,7 @@ class cnnModel1(tNN.Module):
         x = self.fc2(x)
         return tNN.functional.softmax(x)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = cnnModel1().to(device)
-criterion = tNN.CrossEntropyLoss().to(device)
-optimizer = tOptim.Adam(model.parameters(),lr=0.001)
-
-def training(epoch):
+def training(device, model, criterion, optimizer, epoch):
     model.train()
     for batchIDx, (data,  target) in enumerate(dataLoaders['train']):
         data, target = data.to(device), target.to(device)
@@ -86,7 +77,7 @@ def training(epoch):
         if batchIDx % 20 == 0:
             print(f"Train epoch: {epoch} [{batchIDx * len(data)}/{len(dataLoaders['train'].dataset)} ({100. * batchIDx / len(dataLoaders['train']):.0f}%)]\t{loss.item():.6f}")
 
-def testing():
+def testing(device, model, criterion):
     model.eval()
     testLoss = 0
     correct = 0
@@ -101,10 +92,24 @@ def testing():
     testLoss /= len(dataLoaders['test'].dataset)
     print(f"\nTest set: Average loss: {testLoss:.4f}, Accuracy {correct}/{len(dataLoaders['test'].dataset)} ({100. * correct / len(dataLoaders['test'].dataset):.0f}%)\n")
 
-if __name__ == '__main__':
-    for epoch in range(1,11):
-        training(epoch)
-        testing()
+def main():
+    
+    inputSize = 28
+    inputChannel = 1
+    numClassess = 10
+    
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model = cnnModel1(inputChannel, inputSize, numClassess).to(device)
+    criterion = tNN.CrossEntropyLoss().to(device)
+    optimizer = tOptim.Adam(model.parameters(),lr=0.001)
+    
+    for epoch in range(50):
+        training(device, model, criterion, optimizer, epoch + 1)
+        testing(device, model, criterion)
+        
     modelScripted = torch.jit.script(model)
     modelScripted.save('model2_CNN1_Scripted.pt')
     print("model saved")
+
+if __name__ == '__main__':
+    main()
