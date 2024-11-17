@@ -1,23 +1,31 @@
 import PIL.Image
 import torch
-import torchvision 
-import matplotlib.pyplot as plt
+import torchvision
+from torchvision import transforms
 from torchvision.transforms import ToTensor
+from torchvision.transforms import Grayscale
 from torchvision import datasets
 import torch.nn as tNN
 import PIL
+import matplotlib.pyplot as plt
 
-mnistTestData = datasets.MNIST(
+testData = datasets.CIFAR10(
     root="../data",
     train= False,
-    transform=ToTensor(),
+    transform=transforms.Compose([ToTensor(),Grayscale(num_output_channels=1)]),
     download=True
 )
 
-model = torch.jit.load("model2_CNN1_Scripted.pt")
+datasetName = "cifar10"
+
+classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
+
+model = torch.jit.load(f"model2_CNN1_Scripted_{datasetName}.pt")
 model.eval()
 
-data, target = mnistTestData[238]
+data, target = testData[123]
+
+print(target)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
@@ -28,7 +36,7 @@ output = model(data)
 
 prediction = output.argmax(dim = 1, keepdim = True).item()
 
-print(f"Prediction: {prediction}")
+print(f"Prediction: {classes[prediction]} Actual value: {classes[target]}")
 
 image = data.squeeze(0).squeeze(0).cpu().numpy()
 
