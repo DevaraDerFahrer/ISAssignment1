@@ -1,2 +1,4 @@
 /data/MNIST
+/data/cifar-10-batches-py
 local_notes
+/data/cifar-10-python.tar.gz
