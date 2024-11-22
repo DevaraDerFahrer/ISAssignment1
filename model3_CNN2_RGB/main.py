@@ -21,7 +21,13 @@ class cnnModel2RGB(tNN.Module):
         self.conv3 = tNN.Conv2d(128, self.outputChannel, kernel_size=3)
         self.convDrop = tNN.Dropout2d()
         self.maxPool = tNN.MaxPool2d(2, 2)
-        self.inputSize = (inputSize/2/2/2) * self.outputChannel
+        self.inputSize = ((inputSize - 3 + 2*0)//1) + 1 # 1st convolution
+        self.inputSize = ((self.inputSize - 2 + 2*0)//2) + 1 # maxpool 2x2 stride 2
+        self.inputSize = ((self.inputSize - 3 + 2*0)//1) + 1 # 2nd convolution
+        self.inputSize = ((self.inputSize - 2 + 2*0)//2) + 1 # maxpool 2x2 stride 2
+        self.inputSize = ((self.inputSize - 3 + 2*0)//1) + 1 # 3rd convolution
+        self.inputSize = ((self.inputSize - 2 + 2*0)//2) + 1 # maxpool 2x2 stride 2
+        self.inputSize = int(self.inputSize * self.inputSize * self.outputChannel)
         self.fc1 = tNN.Linear(self.inputSize,500)
         self.fc2 = tNN.Linear(500,numClassess)
    
@@ -144,7 +150,7 @@ def main():
         
     modelScripted = torch.jit.script(model)
     modelScripted.save(f'model3_CNN2RGB_Scripted_{datasetName}.pt')
-    print("model saved")
+    print(f"model saved, elapsed time: {time.time() - programStartTime}")
 
 if __name__ == '__main__':
     main()

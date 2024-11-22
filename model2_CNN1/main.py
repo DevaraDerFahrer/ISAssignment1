@@ -15,24 +15,16 @@ import time
 class cnnModel1(tNN.Module):
     def __init__(self, inputChannel, inputSize, numClassess):
         super(cnnModel1, self).__init__()
-        self.conv1 = tNN.Conv2d(inputChannel, 10, kernel_size=5)
         self.outputChannel = 20
+        self.conv1 = tNN.Conv2d(inputChannel, 10, kernel_size=5)
         self.conv2 = tNN.Conv2d(10, self.outputChannel, kernel_size=5)
         self.conv2Drop = tNN.Dropout2d()
         self.maxPool = tNN.MaxPool2d(2, 2)
-        print(inputSize)
-        self.inputSize = ((inputSize - 5 + 2*0)/1) + 1 # 1st convolution
-        print(self.inputSize)
-        self.inputSize = ((self.inputSize - 2 + 2*0)/2) + 1 # maxpool 2x2 stride 2
-        print(self.inputSize)
-        self.inputSize = ((self.inputSize - 5 + 2*0)/1) + 1 # 2nd convolution
-        print(self.inputSize)
-        self.inputSize = ((self.inputSize - 2 + 2*0)/2) + 1 # maxpool 2x2 stride 2
-        print(self.inputSize)
+        self.inputSize = ((inputSize - 5 + 2*0)//1) + 1 # 1st convolution
+        self.inputSize = ((self.inputSize - 2 + 2*0)//2) + 1 # maxpool 2x2 stride 2
+        self.inputSize = ((self.inputSize - 5 + 2*0)//1) + 1 # 2nd convolution
+        self.inputSize = ((self.inputSize - 2 + 2*0)//2) + 1 # maxpool 2x2 stride 2
         self.inputSize = int(self.inputSize * self.inputSize * self.outputChannel)
-        print(self.inputSize)
-        #self.inputSize = int((inputSize/2/2) * self.outputChannel)
-        print(self.inputSize)
         self.fc1 = tNN.Linear(self.inputSize,50)
         self.fc2 = tNN.Linear(50,numClassess)
    
@@ -153,7 +145,7 @@ def main():
         
     modelScripted = torch.jit.script(model)
     modelScripted.save(f'model2_CNN1_Scripted_{datasetName}.pt')
-    print("model saved")
+    print(f"model saved, elapsed time: {time.time() - programStartTime}")
 
 if __name__ == '__main__':
     main()
