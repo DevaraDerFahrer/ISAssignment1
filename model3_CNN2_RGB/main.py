@@ -86,6 +86,7 @@ def main():
     if datasetName == "exit":
         return
     elif datasetName == "mnist":
+        inputChannel = 1
         inputSize = 28
         numClassess = 10
         
@@ -104,6 +105,7 @@ def main():
         )
         
     elif datasetName == "cifar10":
+        inputChannel = 3
         inputSize = 32
         numClassess = 10
         
@@ -140,11 +142,11 @@ def main():
     }
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = cnnModel2RGB(3, inputSize, numClassess).to(device)
+    model = cnnModel2RGB(inputChannel, inputSize, numClassess).to(device)
     criterion = tNN.CrossEntropyLoss().to(device)
     optimizer = tOptim.Adam(model.parameters(),lr=0.001)
     
-    for epoch in range(20):
+    for epoch in range(50):
         training(device, model, dataLoaders, criterion, optimizer, epoch + 1)
         testing(device, model, dataLoaders, criterion)
         
