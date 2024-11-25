@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 testData = datasets.CIFAR10(
     root="../data",
     train= False,
-    transform=transforms.Compose([ToTensor()]),
+    transform=transforms.Compose([ToTensor(),Grayscale(num_output_channels=1)]),
     download=True
 )
 
@@ -20,7 +20,7 @@ datasetName = "cifar10"
 
 classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
-model = torch.jit.load(f"model3_CNN2RGB_Scripted_{datasetName}.pt")
+model = torch.jit.load(f"model2_CNN1_Scripted_{datasetName}.pt")
 model.eval()
 
 data, target = testData[123]
