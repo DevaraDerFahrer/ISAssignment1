@@ -29,9 +29,9 @@ def SavePlotAsVectors(x, y, title, xlabel, ylabel, filename, output_dir="vector_
     print(f"Saved vector image: {os.path.join(output_dir, f'{filename}.svg')}")
 
 class linearModel1(tNN.Module):
-    def __init__(self, inputSize, numClasses):
+    def __init__(self, inputSize, inputChannel, numClasses):
         super(linearModel1, self).__init__()
-        self.inputSize = inputSize
+        self.inputSize = inputSize * inputSize * inputChannel
         self.fc1 = tNN.Linear(self.inputSize,300)
         self.fc2 = tNN.Linear(300,300)
         self.out = tNN.Linear(300,numClasses)
@@ -82,21 +82,22 @@ def main():
     
     trainingTF = torchvision.transforms.Compose([
         transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomCrop(32, padding=4),
+        transforms.RandomCrop(28, padding=4),
         transforms.RandomRotation(10),
         ToTensor(),
-        Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        Normalize((0.5), (0.5))
         ])
         
     testTF = torchvision.transforms.Compose([
         ToTensor(),
-        Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
+        Normalize((0.5), (0.5))
         ])    
     
     if datasetName == "exit":
         return
     elif datasetName == "mnist":
-        inputSize = 28*28
+        inputSize = 28
+        inputChannel = 1
         numClassess = 10
         
         trainData = datasets.MNIST(
@@ -114,7 +115,8 @@ def main():
         )
         
     elif datasetName == "cifar10":
-        inputSize = 32*32
+        inputSize = 32
+        inputChannel = 3
         numClassess = 10
         
         trainData = datasets.CIFAR10(
@@ -150,7 +152,7 @@ def main():
     }
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = linearModel1(inputSize, numClassess).to(device)
+    model = linearModel1(inputSize, inputChannel, numClassess).to(device)
     criterion = tNN.CrossEntropyLoss().to(device)
     optimizer = tOptim.Adam(model.parameters(),lr=0.001)
     
