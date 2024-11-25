@@ -167,7 +167,7 @@ def main():
         x=range(1, numOfEpoch+1), y=losses,
         title="Training Loss Over Epochs",
         xlabel="Epochs", ylabel="Loss",
-        filename="training_loss",
+        filename=f"training_loss_{datasetName}",
         output_dir="results"
     )
 
@@ -175,7 +175,7 @@ def main():
         x=range(1, numOfEpoch+1), y=accuracies,
         title="Test Accuracy Over Epochs",
         xlabel="Epochs", ylabel="Accuracy (%)",
-        filename="test_accuracy",
+        filename=f"test_accuracy_{datasetName}",
         output_dir="results"
     )    
     
