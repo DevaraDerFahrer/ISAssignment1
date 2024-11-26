@@ -68,7 +68,9 @@ def testing(device, model, dataLoaders, criterion):
             correct += pred.eq(target.view_as(pred)).sum().item()
 
     testLoss /= len(dataLoaders['test'].dataset)
+    testAccuracy = correct/len(dataLoaders['test'].dataset)
     print(f"\nTest set: Average loss: {testLoss:.4f}, Accuracy {correct}/{len(dataLoaders['test'].dataset)} ({100. * correct / len(dataLoaders['test'].dataset):.0f}%)\n")
+    return testLoss, testAccuracy
 
 def main():
     programStartTime = time.time()
@@ -78,20 +80,7 @@ def main():
         datasetName = input("Choose dataset[mnist/cifar10]: ")
     
     trainData = any
-    testData = any
-    
-    trainingTF = torchvision.transforms.Compose([
-        transforms.RandomHorizontalFlip(p=0.5),
-        transforms.RandomCrop(28, padding=4),
-        transforms.RandomRotation(10),
-        ToTensor(),
-        Normalize((0.5), (0.5))
-        ])
-        
-    testTF = torchvision.transforms.Compose([
-        ToTensor(),
-        Normalize((0.5), (0.5))
-        ])    
+    testData = any    
     
     if datasetName == "exit":
         return
@@ -99,6 +88,19 @@ def main():
         inputSize = 28
         inputChannel = 1
         numClassess = 10
+        
+        trainingTF = torchvision.transforms.Compose([
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomCrop(inputSize, padding=4),
+            transforms.RandomRotation(10),
+            ToTensor(),
+            Normalize((0.5), (0.5))
+            ])
+        
+        testTF = torchvision.transforms.Compose([
+            ToTensor(),
+            Normalize((0.5), (0.5))
+            ])
         
         trainData = datasets.MNIST(
             root="../data",
@@ -118,6 +120,19 @@ def main():
         inputSize = 32
         inputChannel = 3
         numClassess = 10
+        
+        trainingTF = torchvision.transforms.Compose([
+            transforms.RandomHorizontalFlip(p=0.5),
+            transforms.RandomCrop(inputSize, padding=4),
+            transforms.RandomRotation(10),
+            ToTensor(),
+            Normalize((0.5), (0.5))
+            ])
+        
+        testTF = torchvision.transforms.Compose([
+            ToTensor(),
+            Normalize((0.5), (0.5))
+            ])
         
         trainData = datasets.CIFAR10(
             root="../data",
@@ -161,9 +176,11 @@ def main():
     losses = []
     accuracies = []
     
-    for epoch in range(numOfEpoch):
+    for epoch in range(1, numOfEpoch+1):
         training(device, model, dataLoaders, criterion, optimizer, epoch)
-        testing(device, model, dataLoaders, criterion)
+        testLoss, testAccuracy = testing(device, model, dataLoaders, criterion)
+        losses.append(testLoss)
+        accuracies.append(testAccuracy)
     
     SavePlotAsVectors(
         x=range(1, numOfEpoch+1), y=losses,

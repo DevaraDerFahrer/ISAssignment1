@@ -108,21 +108,23 @@ def main():
         return
     elif datasetName == "mnist":
         inputChannel = 1
-        inputSize = 28
+        inputSize = 32
         numClassess = 10
         
         trainingTF = torchvision.transforms.Compose([
             transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomCrop(32, padding=4),
+            transforms.Resize(inputSize),
+            transforms.RandomCrop(inputSize, padding=4),
             transforms.RandomRotation(10),
             ToTensor(),
-            Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
+            Normalize((0.5), (0.5))
+            ])
         
         testTF = torchvision.transforms.Compose([
+            transforms.Resize(inputSize),
             ToTensor(),
-            Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
+            Normalize((0.5), (0.5))
+            ])
         
         trainData = datasets.MNIST(
             root="../data",
@@ -145,16 +147,16 @@ def main():
         
         trainingTF = torchvision.transforms.Compose([
             transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomCrop(32, padding=4),
+            transforms.RandomCrop(inputSize, padding=4),
             transforms.RandomRotation(10),
             ToTensor(),
-            Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
+            Normalize((0.5), (0.5))
+            ])
         
         testTF = torchvision.transforms.Compose([
             ToTensor(),
-            Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
+            Normalize((0.5), (0.5))
+            ])
         
         trainData = datasets.CIFAR10(
             root="../data",
@@ -200,7 +202,7 @@ def main():
     
     for epoch in range(1, numOfEpoch+1):
         training(device, model, dataLoaders, criterion, optimizer, epoch)
-        testLoss, testAccuracy =  testing(device, model, dataLoaders, criterion)
+        testLoss, testAccuracy = testing(device, model, dataLoaders, criterion)
         losses.append(testLoss)
         accuracies.append(testAccuracy)
         
