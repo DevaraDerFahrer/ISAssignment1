@@ -124,7 +124,7 @@ def main():
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    cnnModel = torch.jit.load(f"model2_CNN1_Scripted_{datasetName}.pt").to(device)
+    cnnModel = torch.jit.load(f"../model2_CNN1/model2_CNN1_Scripted_{datasetName}.pt").to(device)
     cnnModel.eval()
 
     extractedFeatures = ExtractFeatures(cnnModel)
