@@ -22,10 +22,10 @@ def ExtractFeatures(device, model, dataLoader):
     features = []
     labels = []
     with torch.no_grad():
-        for inputs, targets in dataLoader:
+        for inputs, target in dataLoader:
             inputs = inputs.to(device)
             
-            outputs = tNN.functional.relu(model.conv1(outputs))
+            outputs = tNN.functional.relu(model.conv1(inputs))
             outputs = model.maxPool(outputs)
             outputs = tNN.functional.relu(model.conv2(outputs))
             outputs = model.maxPool(outputs)
@@ -35,10 +35,18 @@ def ExtractFeatures(device, model, dataLoader):
             outputs = model.maxPool(outputs)
             outputs = outputs.view(outputs.size(0), -1)
 
-            outputs = outputs.view(outputs.size(0), -1)  # Flatten
             features.append(outputs.cpu().numpy())
-            labels.append(targets.numpy())
+            labels.append(target.numpy())
     return np.concatenate(features), np.concatenate(labels)
+
+class model3_SVM1(tNN.Module):
+    def __init__(self, inputDimension, numClasses):
+        super(model3_SVM1, self).__init__()
+        self.weights = tNN.Parameter(torch.randn(inputDimension, numClasses))
+        self.bias = tNN.Parameter(torch.zeros(numClasses))
+
+    def forward(self, x):
+        return torch.matmul(x, self.weights) + self.bias
 
 def main():
     
@@ -122,15 +130,28 @@ def main():
     else:
         return
     
+    dataLoaders = {
+        'train': DataLoader(
+            trainData,
+            batch_size=128,
+            shuffle=True,
+            num_workers=4
+        ),
+        'test': DataLoader(
+            testData,
+            batch_size=128,
+            shuffle=True,
+            num_workers=4
+        )
+    }
+    
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     cnnModel = torch.jit.load(f"../model2_CNN1/model2_CNN1_Scripted_{datasetName}.pt").to(device)
     cnnModel.eval()
 
-    extractedFeatures = ExtractFeatures(cnnModel)
-
-    trainFeatures, trainLabels = ExtractFeatures(device, cnnModel, trainData)
-    testFeatures, testLabels = ExtractFeatures(device, cnnModel, testData)
+    trainFeatures, trainLabels = ExtractFeatures(device, cnnModel, dataLoaders["train"])
+    testFeatures, testLabels = ExtractFeatures(device, cnnModel, dataLoaders["test"])
 
     # Train SVM classifier
     svm = SVC(kernel='linear', C=1.0, random_state=42)
