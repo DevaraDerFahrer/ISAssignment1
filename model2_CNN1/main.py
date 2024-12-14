@@ -20,9 +20,9 @@ def SavePlotAsVectors(x, y, title, xlabel, ylabel, filename, output_dir="vector_
 
     plt.figure(figsize=(8, 6))
     plt.plot(x, y, marker='o')
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
+    plt.title(title, fontsize=20)
+    plt.xlabel(xlabel, fontsize=20)
+    plt.ylabel(ylabel, fontsize=20)
     plt.grid(True)
     plt.savefig(os.path.join(output_dir, f"{filename}.svg"), format="svg", dpi=300)
     plt.close()
