@@ -40,7 +40,7 @@ class linearModel1(tNN.Module):
         x = tNN.functional.relu(self.fc1(x))
         x = tNN.functional.relu(self.fc2(x))
         x = self.out(x)
-        return tNN.functional.softmax(x)
+        return tNN.functional.softmax(x, dim=1)
 
 def training(device, model, dataLoaders, criterion, optimizer, epoch):
     model.train()
@@ -85,11 +85,12 @@ def main():
     if datasetName == "exit":
         return
     elif datasetName == "mnist":
-        inputSize = 28
+        inputSize = 32
         inputChannel = 1
         numClassess = 10
         
         trainingTF = torchvision.transforms.Compose([
+            transforms.Resize(inputSize),
             transforms.RandomHorizontalFlip(p=0.5),
             transforms.RandomCrop(inputSize, padding=4),
             transforms.RandomRotation(10),
@@ -98,6 +99,7 @@ def main():
             ])
         
         testTF = torchvision.transforms.Compose([
+            transforms.Resize(inputSize),
             ToTensor(),
             Normalize((0.5), (0.5))
             ])
