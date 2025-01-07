@@ -1,0 +1,5 @@
+Test set: Average loss: 0.0043, Accuracy 0.8249 (82%)
+
+Saved vector image: results\training_loss_cifar10.svg
+Saved vector image: results\test_accuracy_cifar10.svg
+model saved, elapsed time: 2913.7855474948883

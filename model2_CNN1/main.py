@@ -39,7 +39,8 @@ class cnnModel1(tNN.Module):
         self.convDrop = tNN.Dropout2d()
         self.fcDrop = tNN.Dropout(0.5)
         self.maxPool = tNN.MaxPool2d(2, 2)
-        self.inputSize = ((inputSize - 5 + 2*2)//2) + 1 # 5x5 conv stride 2
+        self.inputSize = inputSize
+        self.inputSize = ((self.inputSize - 5 + 2*2)//2) + 1 # 5x5 conv stride 2
         self.inputSize = ((self.inputSize - 2 + 2*0)//2) + 1 # maxpool 2x2 stride 2
         self.inputSize = ((self.inputSize - 2 + 2*0)//2) + 1 # maxpool 2x2 stride 2
         self.inputSize = ((self.inputSize - 2 + 2*0)//2) + 1 # maxpool 2x2 stride 2

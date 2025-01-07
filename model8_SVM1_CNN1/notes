@@ -1,0 +1,6 @@
+mnist:
+-linear kernel = 0.9873
+
+cifar10:
+-linear kernel = 0.8071
+-poly kernel = 0.7708

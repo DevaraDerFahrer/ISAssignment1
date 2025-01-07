@@ -66,10 +66,10 @@ class ensembleModel(tNN.Module):
         self.inputSize = numOfModels * numClasses
         self.out = tNN.Linear(self.inputSize,numClasses)
         self.device = device
-        self.layer_norm = tNN.LayerNorm(self.inputSize)
+        self.layerNorm = tNN.LayerNorm(self.inputSize)
     def forward(self, x):
         x = x.view(-1, self.inputSize)
-        x = self.layer_norm(x)
+        x = self.layerNorm(x)
         x = self.out(x)
         return tNN.functional.softmax(x, dim=1)
     
@@ -229,7 +229,7 @@ def main():
     criterion = tNN.CrossEntropyLoss().to(device)
     optimizer = tOptim.Adam(model.parameters(),lr=0.001)
     
-    numOfEpoch = 10
+    numOfEpoch = 20
     
     losses = []
     accuracies = []
