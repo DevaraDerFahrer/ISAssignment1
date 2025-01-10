@@ -1,6 +1,8 @@
 # ISAssignment1
 
 Link to Github
+`https://github.com/DevaraDerFahrer/ISAssignment1`
+ or
 `https://github.com/DevaraDerFahrer/ISAssignment1.git`
 
 First of all, run this code to install mylibrary locally as local project module:
