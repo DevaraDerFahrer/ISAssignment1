@@ -1,75 +1,9 @@
 import torch
-import time
-import torchvision
-from torchvision import datasets
-from torchvision import transforms
-from torchvision.transforms import ToTensor
-from torchvision.transforms import Grayscale
-from torchvision.transforms import Normalize
-import matplotlib.pyplot as plt
-import numpy as np
-from torch.utils.data import DataLoader
 import torch.nn as tNN
-import torch.optim as tOptim
 import time
-import os
-
-def SavePlotAsVectors(x, y, title, xlabel, ylabel, filename, output_dir="vector_images"):
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    plt.figure(figsize=(8, 6))
-    plt.plot(x, y, marker='o')
-    plt.title(title, fontsize=20)
-    plt.xlabel(xlabel, fontsize=20)
-    plt.ylabel(ylabel, fontsize=20)
-    plt.grid(True)
-    plt.savefig(os.path.join(output_dir, f"{filename}.svg"), format="svg", dpi=300)
-    plt.close()
-    print(f"Saved vector image: {os.path.join(output_dir, f'{filename}.svg')}")
-
-class cnnModel3(tNN.Module):
-    def __init__(self, inputChannel, inputSize, numClassess):
-        super(cnnModel3, self).__init__()
-        self.inputSize = inputSize
-        self.outputChannel = 256
-        self.conv1 = tNN.Conv2d(inputChannel, 16, kernel_size=3)
-        self.conv2 = tNN.Conv2d(16, 32, kernel_size=3)
-        self.conv3 = tNN.Conv2d(32, 64, kernel_size=3)
-        self.conv4 = tNN.Conv2d(64, 128, kernel_size=3)
-        self.conv5 = tNN.Conv2d(128, self.outputChannel, kernel_size=3)
-        self.convDrop = tNN.Dropout2d()
-        self.fcDrop = tNN.Dropout(0.5)
-        self.maxPool = tNN.MaxPool2d(2, 2)
-        self.inputSize = ((self.inputSize - 3 + 2*0)//1) + 1 # 3x3 conv stride 1 zero padding
-        self.inputSize = ((self.inputSize - 3 + 2*0)//1) + 1 # 3x3 conv stride 1 zero padding
-        self.inputSize = ((self.inputSize - 2 + 2*0)//2) + 1 # maxpool 2x2 stride 2
-        self.inputSize = ((self.inputSize - 3 + 2*0)//1) + 1 # 3x3 conv stride 1 zero padding
-        self.inputSize = ((self.inputSize - 3 + 2*0)//1) + 1 # 3x3 conv stride 1 zero padding
-        self.inputSize = ((self.inputSize - 3 + 2*0)//1) + 1 # 3x3 conv stride 1 zero padding
-        self.inputSize = ((self.inputSize - 2 + 2*0)//2) + 1 # maxpool 2x2 stride 2
-        self.inputSize = int(self.inputSize * self.inputSize * self.outputChannel)
-        self.fc1 = tNN.Linear(self.inputSize, 512)
-        self.fc2 = tNN.Linear(512, 128)
-        self.fc3 = tNN.Linear(128, numClassess)
-   
-    def forward(self, x):
-        x = tNN.functional.relu(self.conv1(x))
-        x = tNN.functional.relu(self.conv2(x))
-        x = self.maxPool(x)
-        x = tNN.functional.relu(self.conv3(x))
-        x = tNN.functional.relu(self.conv4(x))
-        x = tNN.functional.relu(self.conv5(x))
-        x = self.maxPool(x)
-        x = x.view(-1, self.inputSize)
-        x = self.fc1(x)
-        x = self.fcDrop(x)
-        x = tNN.functional.relu(x)
-        x = self.fc2(x)
-        x = self.fcDrop(x)
-        x = tNN.functional.relu(x)
-        x = self.fc3(x)
-        return x
+import torch.optim as tOptim
+import pickle
+import mylibrary
 
 def training(device, model, dataLoaders, criterion, optimizer, epoch):
     model.train()
@@ -80,6 +14,7 @@ def training(device, model, dataLoaders, criterion, optimizer, epoch):
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()
+        
         if batchIDx % 20 == 0:
             print(f"Train epoch: {epoch} [{batchIDx * len(data)}/{len(dataLoaders['train'].dataset)} ({100. * batchIDx / len(dataLoaders['train']):.0f}%)]\t{loss.item():.6f}")
 
@@ -88,151 +23,78 @@ def testing(device, model, dataLoaders, criterion):
     testLoss = 0
     correct = 0
     with torch.no_grad():
-        for data, target in dataLoaders['test']:
+        for data, target in dataLoaders['validation']:
             data, target = data.to(device), target.to(device)
             output = model(data)
             testLoss += criterion(output, target).item()
             pred = output.argmax(dim = 1, keepdim = True)
             correct += pred.eq(target.view_as(pred)).sum().item()
 
-    testLoss /= len(dataLoaders['test'].dataset)
-    testAccuracy = correct/len(dataLoaders['test'].dataset)
-    print(f"\nTest set: Average loss: {testLoss:.4f}, Accuracy {testAccuracy} ({100. * correct / len(dataLoaders['test'].dataset):.0f}%)\n")
+    testLoss /= len(dataLoaders['validation'].dataset)
+    testAccuracy = correct/len(dataLoaders['validation'].dataset)
+    print(f"\nTest set: Average loss: {testLoss:.4f}, Accuracy {correct}/{len(dataLoaders['validation'].dataset)} ({100. * correct / len(dataLoaders['validation'].dataset):.0f}%)\n")
     return testLoss, testAccuracy
 
 def main():
-    
     programStartTime = time.time()
 
     datasetName = input("Choose dataset[mnist/cifar10]: ")
     while not(datasetName == "mnist" or datasetName == "cifar10" or datasetName == "exit"):
         datasetName = input("Choose dataset[mnist/cifar10]: ")
     
-    trainData = any
-    testData = any
+    inputSize = 32
+    inputChannel = 0
+    numClassess = 10
     
-    if datasetName == "exit":
-        return
-    elif datasetName == "mnist":
+    if datasetName == "mnist":
         inputChannel = 1
-        inputSize = 32
-        numClassess = 10
-        
-        trainingTF = torchvision.transforms.Compose([
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.Resize(inputSize),
-            transforms.RandomCrop(inputSize, padding=4),
-            transforms.RandomRotation(10),
-            ToTensor(),
-            Normalize((0.5), (0.5))
-            ])
-        
-        testTF = torchvision.transforms.Compose([
-            transforms.Resize(inputSize),
-            ToTensor(),
-            Normalize((0.5), (0.5))
-            ])
-        
-        trainData = datasets.MNIST(
-            root="../data",
-            train= True,
-            transform=trainingTF,
-            download=True
-        )
-
-        testData = datasets.MNIST(
-            root="../data",
-            train= False,
-            transform=testTF,
-            download=True
-        )
-        
-    elif datasetName == "cifar10":
-        inputChannel = 3
-        inputSize = 32
-        numClassess = 10
-        
-        trainingTF = torchvision.transforms.Compose([
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomCrop(inputSize, padding=4),
-            transforms.RandomRotation(10),
-            ToTensor(),
-            Normalize((0.5), (0.5))
-            ])
-        
-        testTF = torchvision.transforms.Compose([
-            ToTensor(),
-            Normalize((0.5), (0.5))
-            ])
-        
-        trainData = datasets.CIFAR10(
-            root="../data",
-            train= True,
-            transform=trainingTF,
-            download=True
-        )
-        
-        testData = datasets.CIFAR10(
-            root="../data",
-            train= False,
-            transform=testTF,
-            download=True
-        )
-
     else:
-        return
+        inputChannel = 3
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = cnnModel3(inputChannel, inputSize, numClassess).to(device)
+    model = mylibrary.CNN3(inputChannel, inputSize, numClassess).to(device)
     criterion = tNN.CrossEntropyLoss().to(device)
-    optimizer = tOptim.Adam(model.parameters(), lr=0.001)
+    optimizer = tOptim.Adam(model.parameters(),lr=0.001)
     
-    dataLoaders = {
-        'train': DataLoader(
-            trainData,
-            batch_size=128,
-            shuffle=True,
-            num_workers=4
-        ),
-        'test': DataLoader(
-            testData,
-            batch_size=128,
-            shuffle=True,
-            num_workers=4
-        )
-    }
+    dataLoaders = pickle.load(open(f'../data/dataLoaders{datasetName}.pkl', 'rb'))
     
     numOfEpoch = 100
     
     losses = []
     accuracies = []
     
+    bestAccuracy = 0.0
     for epoch in range(1, numOfEpoch+1):
         training(device, model, dataLoaders, criterion, optimizer, epoch)
         testLoss, testAccuracy = testing(device, model, dataLoaders, criterion)
         losses.append(testLoss)
         accuracies.append(testAccuracy)
         
-    SavePlotAsVectors(
+        if testAccuracy >= bestAccuracy:
+            bestAccuracy = testAccuracy
+            torch.save(model, f'model4_CNN3_{datasetName}.pt')
+            modelScripted = torch.jit.script(model)
+            modelScripted.save(f'model4_CNN3_Scripted_{datasetName}.pt')
+    
+    mylibrary.SavePlotAsVectors(
         x=range(1, numOfEpoch+1), y=losses,
         title="Training Loss Over Epochs",
         xlabel="Epochs", ylabel="Loss",
         filename=f"training_loss_{datasetName}",
         output_dir="results"
     )
+    pickle.dump(losses, open(f'results/losses.pkl', 'wb'))
 
-    SavePlotAsVectors(
+    mylibrary.SavePlotAsVectors(
         x=range(1, numOfEpoch+1), y=accuracies,
         title="Test Accuracy Over Epochs",
         xlabel="Epochs", ylabel="Accuracy (%)",
         filename=f"test_accuracy_{datasetName}",
         output_dir="results"
     )
-        
-    torch.save(model, f'model4_CNN3_{datasetName}.pt')
-    modelScripted = torch.jit.script(model)
-    modelScripted.save(f'model4_CNN3_Scripted_{datasetName}.pt')
-    print(f"model saved, elapsed time: {time.time() - programStartTime}")
+    pickle.dump(accuracies, open(f'results/accuracies.pkl', 'wb'))
+    
+    print(f"Training done, elapsed time: {time.time() - programStartTime}")
 
 if __name__ == '__main__':
     main()

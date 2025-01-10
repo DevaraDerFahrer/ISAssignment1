@@ -1,46 +1,9 @@
 import torch
-import time
-import torchvision
-from torchvision import datasets
-from torchvision import transforms
-from torchvision.transforms import ToTensor
-from torchvision.transforms import Grayscale
-from torchvision.transforms import Normalize
-import matplotlib.pyplot as plt
-import numpy as np
-from torch.utils.data import DataLoader
 import torch.nn as tNN
-import torch.optim as tOptim
 import time
-import os
-
-def SavePlotAsVectors(x, y, title, xlabel, ylabel, filename, output_dir="vector_images"):
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    plt.figure(figsize=(8, 6))
-    plt.plot(x, y, marker='o')
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.grid(True)
-    plt.savefig(os.path.join(output_dir, f"{filename}.svg"), format="svg", dpi=300)
-    plt.close()
-    print(f"Saved vector image: {os.path.join(output_dir, f'{filename}.svg')}")
-
-class linearModel1(tNN.Module):
-    def __init__(self, inputSize, inputChannel, numClasses):
-        super(linearModel1, self).__init__()
-        self.inputSize = inputSize * inputSize * inputChannel
-        self.fc1 = tNN.Linear(self.inputSize,300)
-        self.fc2 = tNN.Linear(300,300)
-        self.out = tNN.Linear(300,numClasses)
-    def forward(self, x):
-        x = x.view(-1, self.inputSize)
-        x = tNN.functional.relu(self.fc1(x))
-        x = tNN.functional.relu(self.fc2(x))
-        x = self.out(x)
-        return tNN.functional.softmax(x, dim=1)
+import torch.optim as tOptim
+import pickle
+import mylibrary
 
 def training(device, model, dataLoaders, criterion, optimizer, epoch):
     model.train()
@@ -60,16 +23,16 @@ def testing(device, model, dataLoaders, criterion):
     testLoss = 0
     correct = 0
     with torch.no_grad():
-        for data, target in dataLoaders['test']:
+        for data, target in dataLoaders['validation']:
             data, target = data.to(device), target.to(device)
             output = model(data)
             testLoss += criterion(output, target).item()
             pred = output.argmax(dim = 1, keepdim = True)
             correct += pred.eq(target.view_as(pred)).sum().item()
 
-    testLoss /= len(dataLoaders['test'].dataset)
-    testAccuracy = correct/len(dataLoaders['test'].dataset)
-    print(f"\nTest set: Average loss: {testLoss:.4f}, Accuracy {correct}/{len(dataLoaders['test'].dataset)} ({100. * correct / len(dataLoaders['test'].dataset):.0f}%)\n")
+    testLoss /= len(dataLoaders['validation'].dataset)
+    testAccuracy = correct/len(dataLoaders['validation'].dataset)
+    print(f"\nTest set: Average loss: {testLoss:.4f}, Accuracy {correct}/{len(dataLoaders['validation'].dataset)} ({100. * correct / len(dataLoaders['validation'].dataset):.0f}%)\n")
     return testLoss, testAccuracy
 
 def main():
@@ -79,131 +42,59 @@ def main():
     while not(datasetName == "mnist" or datasetName == "cifar10" or datasetName == "exit"):
         datasetName = input("Choose dataset[mnist/cifar10]: ")
     
-    trainData = any
-    testData = any    
+    inputSize = 32
+    inputChannel = 0
+    numClassess = 10
     
-    if datasetName == "exit":
-        return
-    elif datasetName == "mnist":
-        inputSize = 32
+    if datasetName == "mnist":
         inputChannel = 1
-        numClassess = 10
-        
-        trainingTF = torchvision.transforms.Compose([
-            transforms.Resize(inputSize),
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomCrop(inputSize, padding=4),
-            transforms.RandomRotation(10),
-            ToTensor(),
-            Normalize((0.5), (0.5))
-            ])
-        
-        testTF = torchvision.transforms.Compose([
-            transforms.Resize(inputSize),
-            ToTensor(),
-            Normalize((0.5), (0.5))
-            ])
-        
-        trainData = datasets.MNIST(
-            root="../data",
-            train= True,
-            transform=trainingTF,
-            download=True
-        )
-
-        testData = datasets.MNIST(
-            root="../data",
-            train= False,
-            transform=testTF,
-            download=True
-        )
-        
     elif datasetName == "cifar10":
-        inputSize = 32
         inputChannel = 3
-        numClassess = 10
-        
-        trainingTF = torchvision.transforms.Compose([
-            transforms.RandomHorizontalFlip(p=0.5),
-            transforms.RandomCrop(inputSize, padding=4),
-            transforms.RandomRotation(10),
-            ToTensor(),
-            Normalize((0.5), (0.5))
-            ])
-        
-        testTF = torchvision.transforms.Compose([
-            ToTensor(),
-            Normalize((0.5), (0.5))
-            ])
-        
-        trainData = datasets.CIFAR10(
-            root="../data",
-            train= True,
-            transform=trainingTF,
-            download=True
-        )
-        
-        testData = datasets.CIFAR10(
-            root="../data",
-            train= False,
-            transform=testTF,
-            download=True
-        )
-
-    else:
-        return
-    
-    dataLoaders = {
-        'train': DataLoader(
-            trainData,
-            batch_size=100,
-            shuffle=True,
-            num_workers=1
-        ),
-        'test': DataLoader(
-            testData,
-            batch_size=100,
-            shuffle=True,
-            num_workers=1
-        )
-    }
     
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    model = linearModel1(inputSize, inputChannel, numClassess).to(device)
+    model = mylibrary.Linear1(inputChannel, inputSize, numClassess).to(device)
     criterion = tNN.CrossEntropyLoss().to(device)
     optimizer = tOptim.Adam(model.parameters(),lr=0.001)
+    
+    dataLoaders = pickle.load(open(f'../data/dataLoaders{datasetName}.pkl', 'rb'))
     
     numOfEpoch = 100
     
     losses = []
     accuracies = []
     
+    bestAccuracy = 0.0
     for epoch in range(1, numOfEpoch+1):
         training(device, model, dataLoaders, criterion, optimizer, epoch)
         testLoss, testAccuracy = testing(device, model, dataLoaders, criterion)
         losses.append(testLoss)
         accuracies.append(testAccuracy)
+        
+        if testAccuracy >= bestAccuracy:
+            bestAccuracy = testAccuracy
+            torch.save(model, f'model1_Linear1_{datasetName}.pt')
+            modelScripted = torch.jit.script(model)
+            modelScripted.save(f'model1_Linear1_Scripted_{datasetName}.pt')
     
-    SavePlotAsVectors(
+    mylibrary.SavePlotAsVectors(
         x=range(1, numOfEpoch+1), y=losses,
         title="Training Loss Over Epochs",
         xlabel="Epochs", ylabel="Loss",
         filename=f"training_loss_{datasetName}",
         output_dir="results"
     )
+    pickle.dump(losses, open(f'results/losses.pkl', 'wb'))
 
-    SavePlotAsVectors(
+    mylibrary.SavePlotAsVectors(
         x=range(1, numOfEpoch+1), y=accuracies,
         title="Test Accuracy Over Epochs",
         xlabel="Epochs", ylabel="Accuracy (%)",
         filename=f"test_accuracy_{datasetName}",
         output_dir="results"
-    )    
+    )
+    pickle.dump(accuracies, open(f'results/accuracies.pkl', 'wb'))
     
-    torch.save(model, f'model1_Linear1_{datasetName}.pt')
-    modelScripted = torch.jit.script(model)
-    modelScripted.save(f'model1_Linear1_Scripted_{datasetName}.pt')
-    print(f"model saved, elapsed time: {time.time() - programStartTime}")
+    print(f"Training done, elapsed time: {time.time() - programStartTime}")
 
 if __name__ == '__main__':
     main()

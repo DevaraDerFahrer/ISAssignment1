@@ -1,2 +1,7 @@
-reference:
-https://www.kaggle.com/code/faressayah/cifar-10-images-classification-using-cnns-88
+validation
+
+Accuracy 0.8058 (81%)
+
+test
+
+Accuracy 0.7991 (80%)
