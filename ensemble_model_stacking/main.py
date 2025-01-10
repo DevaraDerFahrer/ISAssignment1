@@ -5,83 +5,32 @@ import torchvision
 from torchvision import datasets
 from torchvision import transforms
 from torchvision.transforms import ToTensor
-from torchvision.transforms import Grayscale
 from torchvision.transforms import Normalize
-from sklearn import svm
-from sklearn.svm import SVC
-import matplotlib.pyplot as plt
-import numpy as np
 from torch.utils.data import DataLoader
 import torch.nn as tNN
 import torch.optim as tOptim
 import time
-import os
-
-def SavePlotAsVectors(x, y, title, xlabel, ylabel, filename, output_dir="vector_images"):
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-
-    plt.figure(figsize=(8, 6))
-    plt.plot(x, y, marker='o')
-    plt.title(title)
-    plt.xlabel(xlabel)
-    plt.ylabel(ylabel)
-    plt.grid(True)
-    plt.savefig(os.path.join(output_dir, f"{filename}.svg"), format="svg", dpi=300)
-    plt.close()
-    print(f"Saved vector image: {os.path.join(output_dir, f'{filename}.svg')}")
-
-class modelCNNSVM:
-    def __init__(self, svmModel):
-        self.SVMModel = svmModel
-        
-    def ExtractFeatures(self, device, cnnModel, dataLoader):
-        features = []
-        with torch.no_grad():
-            for inputs in dataLoader:
-                inputs = inputs.to(device)
-
-                outputs = tNN.functional.relu(cnnModel.conv1(inputs))
-                outputs = cnnModel.maxPool(outputs)
-                outputs = tNN.functional.relu(cnnModel.conv2(outputs))
-                outputs = cnnModel.maxPool(outputs)
-                outputs = tNN.functional.relu(cnnModel.conv3(outputs))
-                outputs = cnnModel.maxPool(outputs)
-                outputs = tNN.functional.relu(cnnModel.conv4(outputs))
-                outputs = cnnModel.maxPool(outputs)
-                outputs = outputs.view(-1, cnnModel.inputSize)
-                
-                batch_features = outputs.view(outputs.size(0), -1).cpu().numpy()
-                features.extend(batch_features)
-
-        return features
-    
-    def Predict(self, device, cnnModel, dataLoader):
-        features = self.ExtractFeatures(device, cnnModel, dataLoader)
-        return self.SVMModel.predict_proba(features)
+import mylibrary
 
 class ensembleModel(tNN.Module):
     def __init__(self, device, numOfModels, numClasses):
         super(ensembleModel, self).__init__()
         self.inputSize = numOfModels * numClasses
-        self.fc1 = tNN.Linear(self.inputSize,30)
-        self.out = tNN.Linear(30,numClasses)
+        self.out = tNN.Linear(self.inputSize,numClasses)
         self.fcDrop = tNN.Dropout(0.5)
         self.device = device
         self.layerNorm = tNN.LayerNorm(self.inputSize)
     def forward(self, x):
         x = x.view(-1, self.inputSize)
         x = self.layerNorm(x)
-        x = self.fc1(x)
-        x = self.fcDrop(x)
         x = tNN.functional.relu(x)
         x = self.out(x)
         return tNN.functional.softmax(x, dim=1)
     
 class ModelCollection:
-    def __init__(self, device, model1, model2, model3, model4, model5, model6, model7):
+    def __init__(self, device, model1, model2, model3, model4, model5, model6, model7, model8, model9, model10):
         self.device = device
-        self.numOfModels = 6
+        self.numOfModels = 10 # change 10 if use all models
         self.model1 = model1
         self.model2 = model2
         self.model3 = model3
@@ -89,16 +38,21 @@ class ModelCollection:
         self.model5 = model5
         self.model6 = model6
         self.model7 = model7
+        self.model8 = model8
+        self.model9 = model9
+        self.model10 = model10
     def GetOutputFromModels(self, x):
         outputs = []
-        #outputs.append(torch.softmax(self.model1(x), dim=1))
+        outputs.append(torch.softmax(self.model1(x), dim=1))
         outputs.append(torch.softmax(self.model2(x), dim=1))
         outputs.append(torch.softmax(self.model3(x), dim=1))
         outputs.append(torch.softmax(self.model4(x), dim=1))
         outputs.append(torch.softmax(self.model5(x), dim=1))
         outputs.append(torch.softmax(self.model6(x), dim=1))
         outputs.append(torch.softmax(self.model7(x), dim=1))
-        #outputs.append(torch.tensor(self.model3.Predict(self.device, self.model2, x), device=self.device).float())
+        outputs.append(torch.tensor(self.model8.Predict(self.device, self.model3, x), device=self.device).float())
+        outputs.append(torch.tensor(self.model9.Predict(self.device, self.model2, x), device=self.device).float())
+        outputs.append(torch.tensor(self.model10.Predict(self.device, self.model5, x), device=self.device).float())
         return torch.cat((outputs), dim=1)
 
 def training(device, model, modelCollection, dataLoaders, criterion, optimizer, epoch):
@@ -250,7 +204,11 @@ def main():
     model7CNN6 = torch.jit.load(f"../model7_CNN6/model7_CNN6_Scripted_{datasetName}.pt").to(device)
     model7CNN6.eval()
     
-    #model3SVM = pickle.load(open(f'../model3_SVM1/model3_SVM1_{datasetName}.pkl', 'rb'))
+    model8SVM1 = pickle.load(open(f'../model8_SVM1_CNN2/model8_SVM1_{datasetName}.pkl', 'rb'))
+    
+    model9SVM2 = pickle.load(open(f'../model9_SVM2_CNN1/model9_SVM2_{datasetName}.pkl', 'rb'))
+    
+    model10SVM3 = pickle.load(open(f'../model10_SVM3_CNN4/model10_SVM3_{datasetName}.pkl', 'rb'))
     
     modelCollection = ModelCollection(
         device, 
@@ -260,14 +218,17 @@ def main():
         model4CNN3,
         model5CNN4,
         model6CNN5,
-        model7CNN6
+        model7CNN6,
+        model8SVM1,
+        model9SVM2,
+        model10SVM3
         )
     
     model = ensembleModel(device, modelCollection.numOfModels, numClassess).to(device)
     criterion = tNN.CrossEntropyLoss().to(device)
     optimizer = tOptim.Adam(model.parameters(),lr=0.001)
     
-    numOfEpoch = 20
+    numOfEpoch = 10
     
     losses = []
     accuracies = []
@@ -278,7 +239,7 @@ def main():
         losses.append(testLoss)
         accuracies.append(testAccuracy)
     
-    SavePlotAsVectors(
+    mylibrary.SavePlotAsVectors(
         x=range(1, numOfEpoch+1), y=losses,
         title="Training Loss Over Epochs",
         xlabel="Epochs", ylabel="Loss",
@@ -286,7 +247,7 @@ def main():
         output_dir="results"
     )
 
-    SavePlotAsVectors(
+    mylibrary.SavePlotAsVectors(
         x=range(1, numOfEpoch+1), y=accuracies,
         title="Test Accuracy Over Epochs",
         xlabel="Epochs", ylabel="Accuracy (%)",
@@ -294,9 +255,9 @@ def main():
         output_dir="results"
     )    
     
-    torch.save(model, f'model1_Linear1_{datasetName}.pt')
+    torch.save(model, f'ensemble_model_stacking_{datasetName}.pt')
     modelScripted = torch.jit.script(model)
-    modelScripted.save(f'model1_Linear1_Scripted_{datasetName}.pt')
+    modelScripted.save(f'ensemble_model_stacking_Scripted_{datasetName}.pt')
     print(f"model saved, elapsed time: {time.time() - programStartTime}")
 
 if __name__ == '__main__':

@@ -2,3 +2,9 @@
 /data/cifar-10-batches-py
 local_notes
 /data/cifar-10-python.tar.gz
+/model8_SVM1_CNN2/*pkl
+/model9_SVM2_CNN1/*pkl
+/model10_SVM3_CNN4/*pkl
+data/dataLoadersCIFAR10.pkl
+data/dataLoadersMNIST.pkl
+data/dataLoadersMNIST28.pkl
