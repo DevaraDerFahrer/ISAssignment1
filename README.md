@@ -1,6 +1,11 @@
 # ISAssignment1
 
+Link to Google Drive
+`https://drive.google.com/file/d/1jrywqqlVqQHRqj1vFLoWKuDcBOm6udMA/view?usp=sharing`
+
 Link to Github
+`https://github.com/DevaraDerFahrer/ISAssignment1`
+ or
 `https://github.com/DevaraDerFahrer/ISAssignment1.git`
 
 First of all, run this code to install mylibrary locally as local project module:
